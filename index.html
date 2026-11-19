@@ -83,7 +83,7 @@
     get wishOptions() { return yjlWishes.slice(); },
     get shootingTrajectories() {
       return effects.filter(effect => effect.kind === "shooting").map(
-        ({ angle, startX, startY, endX, endY, dx, dy }) => ({ angle, startX, startY, endX, endY, dx, dy })
+        ({ angle, x, y, startX, startY, endX, endY, dx, dy }) => ({ angle, x, y, startX, startY, endX, endY, dx, dy })
       );
     }
   };
@@ -283,14 +283,16 @@
     const items = Array.from({ length: 12 }, (_, i) => ({ a: Math.random()*TAU, d: 35+Math.random()*110, kind: ["star","heart","gift"][i%3], phase: Math.random()*TAU }));
     let trajectory = {};
     if (kind === "shooting") {
-      const angle = Math.random() < .5
+      const goesLeftToRight = Math.random() < .5;
+      const angle = goesLeftToRight
         ? (28 + Math.random() * 34) * Math.PI / 180
         : (118 + Math.random() * 34) * Math.PI / 180;
       const dx = Math.cos(angle), dy = Math.sin(angle);
       const margin = Math.max(12, Math.min(width, height) * .035);
-      const startX = width * (.08 + Math.random() * .84), startY = -margin;
-      const forward = rayExitDistance(startX, startY, dx, dy) + margin;
-      const endX = startX + dx * forward, endY = startY + dy * forward;
+      const back = rayExitDistance(x, y, -dx, -dy) + margin;
+      const forward = rayExitDistance(x, y, dx, dy) + margin;
+      const startX = x - dx * back, startY = y - dy * back;
+      const endX = x + dx * forward, endY = y + dy * forward;
       const distance = Math.hypot(endX - startX, endY - startY);
       trajectory = {
         angle, dx, dy, startX, startY, endX, endY,
