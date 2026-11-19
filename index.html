@@ -246,8 +246,14 @@
         const travel = clamp(e.age / (e.duration * .84), 0, 1);
         const x = e.startX + (e.endX - e.startX) * travel;
         const y = e.y - height * .16 + travel * height * .22;
+        const vx = e.endX - e.startX;
+        const vy = height * .22;
+        const length = Math.hypot(vx, vy) || 1;
+        const trailLength = Math.min(150, Math.max(82, width * .16));
+        const trailX = x - vx / length * trailLength;
+        const trailY = y - vy / length * trailLength;
         ctx.strokeStyle=`rgba(224,250,255,${fade})`;ctx.lineWidth=4;
-        ctx.beginPath();ctx.moveTo(x-120,y-42);ctx.lineTo(x,y);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(trailX,trailY);ctx.lineTo(x,y);ctx.stroke();
         glow(x,y,28,"rgb(137,241,255)",.4*fade);
         continue;
       }
@@ -270,14 +276,17 @@
     const cx=width*.5, cy=mobile ? height*.59 : height*.58;
     drawFlow(cx,cy,scale); drawTree(cx,cy,scale); drawSnowman(cx,cy,scale); drawGifts(cx,cy,scale); drawSnow(); drawEffects();
     const y=mobile ? height*.08 : height*.10;
-    textWithOutline(custom.greeting,width*.5,y,Math.max(mobile ? 19 : 22,29*scale),"#ffe294","center");
+    const greetingSize = Math.max(mobile ? 19 : 22,29*scale);
+    textWithOutline(custom.greeting,width*.5,y,greetingSize,"#ffe294","center");
     const topTitleSize = Math.max(mobile ? 11 : 13,16*scale);
-    textWithOutline("MERRY CHRISTMAS",width*.5,y+Math.max(38*scale, topTitleSize + 13),topTitleSize,"#e4f9ff","center");
+    textWithOutline("MERRY CHRISTMAS",width*.5,y+greetingSize+10,topTitleSize,"#e4f9ff","center");
     const blessingX = mobile ? width*.06 : width*.07;
     const blessingY = mobile ? height*.34 : height*.43;
-    textWithOutline(custom.blessing,blessingX,blessingY,Math.max(mobile ? 16 : 18,25*scale),"#ffd27b","left");
+    const blessingSize = Math.max(mobile ? 16 : 18,25*scale);
+    textWithOutline(custom.blessing,blessingX,blessingY,blessingSize,"#ffd27b","left");
     const blessingSubSize = Math.max(mobile ? 9 : 11,14*scale);
-    ctx.font=`${blessingSubSize}px "Segoe UI",sans-serif`;ctx.fillStyle="rgba(165,225,255,.88)";ctx.textAlign="left";ctx.fillText(custom.subtitle,blessingX,blessingY+Math.max(31*scale, blessingSubSize + 14));
+    const blessingGap = Math.max(16, blessingSize * .55);
+    ctx.font=`${blessingSubSize}px "Segoe UI",sans-serif`;ctx.fillStyle="rgba(165,225,255,.88)";ctx.textAlign="left";ctx.fillText(custom.subtitle,blessingX,blessingY+blessingSize+blessingGap);
     ctx.font="12px \"Segoe UI\",sans-serif";ctx.fillStyle="rgba(222,243,255,.78)";ctx.textAlign="center";ctx.fillText(paused?"PAUSED · SPACE TO RESUME":"点击树、礼物或雪人触发惊喜",width*.5,height-18);
   }
   function loop(now) { const dt=Math.min(.05,(now-last)/1000); last=now; if(!paused){t+=dt;updateWorld(dt);} draw(); requestAnimationFrame(loop); }
