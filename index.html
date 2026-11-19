@@ -231,12 +231,26 @@
   }
   function addEffect(kind, x, y) {
     const items = Array.from({ length: 12 }, (_, i) => ({ a: Math.random()*TAU, d: 35+Math.random()*110, kind: ["star","heart","gift"][i%3], phase: Math.random()*TAU }));
-    effects.push({ kind, x, y, age: 0, duration: kind === "shooting" ? 1.8 : 2.25, items });
+    effects.push({
+      kind, x, y, age: 0,
+      duration: kind === "shooting" ? 2.4 : 2.25,
+      startX: kind === "shooting" ? -width * .18 : x,
+      endX: kind === "shooting" ? width * 1.18 : x,
+      items
+    });
   }
   function drawEffects() {
     for (const e of effects) {
       const p = clamp(e.age/e.duration,0,1), fade = smooth(Math.min(1,e.age*4))*smooth(Math.min(1,(e.duration-e.age)*3));
-      if (e.kind === "shooting") { const q = clamp(e.age*1.35,0,1), x=e.x-220+q*440,y=e.y-100+q*150; ctx.strokeStyle=`rgba(224,250,255,${fade})`;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x-90,y-30);ctx.lineTo(x,y);ctx.stroke();glow(x,y,28,"rgb(137,241,255)",.4*fade); continue; }
+      if (e.kind === "shooting") {
+        const travel = clamp(e.age / (e.duration * .84), 0, 1);
+        const x = e.startX + (e.endX - e.startX) * travel;
+        const y = e.y - height * .16 + travel * height * .22;
+        ctx.strokeStyle=`rgba(224,250,255,${fade})`;ctx.lineWidth=4;
+        ctx.beginPath();ctx.moveTo(x-120,y-42);ctx.lineTo(x,y);ctx.stroke();
+        glow(x,y,28,"rgb(137,241,255)",.4*fade);
+        continue;
+      }
       for (const item of e.items) {
         const q=smooth(Math.min(1,p*1.2)), dist=item.d*q, x=e.x+Math.cos(item.a+e.age*.6)*dist, y=e.y+Math.sin(item.a+e.age*.6)*dist-25*Math.sin(p*Math.PI), s=7+4*Math.sin(e.age*2+item.phase);
         ctx.fillStyle=color(item.kind==="heart"?.9:item.kind==="gift"?.12:.55,.5,1,fade);
