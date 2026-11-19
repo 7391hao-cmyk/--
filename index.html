@@ -66,7 +66,12 @@
   const effects = [];
   window.__christmasScene = {
     get paused() { return paused; },
-    get effectCount() { return effects.length; }
+    get effectCount() { return effects.length; },
+    get shootingTrajectories() {
+      return effects.filter(effect => effect.kind === "shooting").map(
+        ({ angle, startX, startY, endX, endY, dx, dy }) => ({ angle, startX, startY, endX, endY, dx, dy })
+      );
+    }
   };
 
   function resize() {
@@ -229,13 +234,36 @@
       glow(x+w*scale/2,y,24*scale,ribbon,.16);
     });
   }
+  function rayExitDistance(x, y, dx, dy) {
+    const distances = [];
+    if (dx > 0) distances.push((width - x) / dx);
+    else if (dx < 0) distances.push(-x / dx);
+    if (dy > 0) distances.push((height - y) / dy);
+    else if (dy < 0) distances.push(-y / dy);
+    return Math.min(...distances.filter(value => value >= 0));
+  }
   function addEffect(kind, x, y) {
     const items = Array.from({ length: 12 }, (_, i) => ({ a: Math.random()*TAU, d: 35+Math.random()*110, kind: ["star","heart","gift"][i%3], phase: Math.random()*TAU }));
+    let trajectory = {};
+    if (kind === "shooting") {
+      const angle = Math.random() * TAU;
+      const dx = Math.cos(angle), dy = Math.sin(angle);
+      const margin = Math.max(12, Math.min(width, height) * .035);
+      const back = rayExitDistance(x, y, -dx, -dy) + margin;
+      const forward = rayExitDistance(x, y, dx, dy) + margin;
+      const startX = x - dx * back, startY = y - dy * back;
+      const endX = x + dx * forward, endY = y + dy * forward;
+      const distance = Math.hypot(endX - startX, endY - startY);
+      trajectory = {
+        angle, dx, dy, startX, startY, endX, endY,
+        duration: clamp(distance / 520, 1.45, 3.8),
+        trailLength: clamp(Math.min(width, height) * .2, 74, 148)
+      };
+    }
     effects.push({
       kind, x, y, age: 0,
-      duration: kind === "shooting" ? 2.4 : 2.25,
-      startX: kind === "shooting" ? -width * .18 : x,
-      endX: kind === "shooting" ? width * 1.18 : x,
+      duration: kind === "shooting" ? trajectory.duration : 2.25,
+      ...trajectory,
       items
     });
   }
@@ -243,15 +271,11 @@
     for (const e of effects) {
       const p = clamp(e.age/e.duration,0,1), fade = smooth(Math.min(1,e.age*4))*smooth(Math.min(1,(e.duration-e.age)*3));
       if (e.kind === "shooting") {
-        const travel = clamp(e.age / (e.duration * .84), 0, 1);
+        const travel = clamp(e.age / e.duration,0,1);
         const x = e.startX + (e.endX - e.startX) * travel;
-        const y = e.y - height * .16 + travel * height * .22;
-        const vx = e.endX - e.startX;
-        const vy = height * .22;
-        const length = Math.hypot(vx, vy) || 1;
-        const trailLength = Math.min(150, Math.max(82, width * .16));
-        const trailX = x - vx / length * trailLength;
-        const trailY = y - vy / length * trailLength;
+        const y = e.startY + (e.endY - e.startY) * travel;
+        const trailX = x - e.dx * e.trailLength;
+        const trailY = y - e.dy * e.trailLength;
         ctx.strokeStyle=`rgba(224,250,255,${fade})`;ctx.lineWidth=4;
         ctx.beginPath();ctx.moveTo(trailX,trailY);ctx.lineTo(x,y);ctx.stroke();
         glow(x,y,28,"rgb(137,241,255)",.4*fade);
